@@ -1,0 +1,18 @@
+# Qwen3 requires transformers>=4.51.0 per Qwen's own docs. The original
+# requirements_sprint.txt pinned ==4.46.0, which predates Qwen3 support --
+# fixed here.
+transformers>=4.51.0
+torch>=2.1
+
+# Version left open deliberately: I could not confirm from search whether
+# the current PyPI release of transformer_lens has a Qwen3 conversion
+# function. Day 1's sanity check (src/model_loader.py) is where you find out
+# for real. If the installed version rejects Qwen3-8B, try installing from
+# source before falling back (see FALLBACK.md):
+#   pip install git+https://github.com/TransformerLensOrg/TransformerLens.git
+transformer_lens
+
+scikit-learn>=1.3
+numpy
+pandas
+matplotlib
