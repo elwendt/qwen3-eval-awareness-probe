@@ -33,6 +33,7 @@ ipynb_checkpoints
 spyderproject
 spyproject
 ropeproject
+connection_config.md
 # Type checker caches
 mypy_cache/
 pytype/
