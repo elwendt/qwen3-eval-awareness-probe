@@ -33,6 +33,15 @@ def load_model(
         ) from e
 
     print("Model loaded successfully.")
+    print(f"Model dtype: {model.dtype}")
+    print(f"Model device: {model.cfg.device}")
+
+    if torch.cuda.is_available():
+        print(
+            f"GPU memory allocated: "
+            f"{torch.cuda.memory_allocated() / 1024**3:.2f} GB"
+        )
+        
     return model
 
 
