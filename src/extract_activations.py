@@ -68,7 +68,7 @@ def extract_last_token_activations(text: str) -> np.ndarray:
         acts = cache[f"blocks.{layer}.hook_out"]  # shape: [1, seq_len, d_model]
         last_token_vec = acts[0, -1, :]  # shape: [d_model]
         assert last_token_vec.shape == (d_model,), f"unexpected shape at layer {layer}: {last_token_vec.shape}"
-        layer_vecs.append(last_token_vec.cpu().numpy())
+        layer_vecs.append(last_token_vec.float().cpu().numpy())
     return np.stack(layer_vecs, axis=0)  # shape: [n_layers, d_model]
 
 
