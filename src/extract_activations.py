@@ -1,6 +1,7 @@
 """
 Day B, step 1: extract resid_post activations for every prompt in
-eval_awareness_prompts.py, mean-pooled per layer, and save them to disk.
+eval_awareness_prompts.py, at the LAST TOKEN position per layer, and save
+them to disk.
 
 This script needs the GPU/model. It does NOT train anything — that's
 train_probe.py, deliberately kept separate so you can iterate on the probe
@@ -12,25 +13,36 @@ Run from the same directory as eval_awareness_prompts.py:
 
 import numpy as np
 import torch
-from transformer_lens import HookedTransformer
+from transformer_lens.model_bridge import TransformerBridge
 
 from eval_awareness_prompts import PROMPTS, IN_DISTRIBUTION_TASK_TYPES, HELD_OUT_TASK_TYPES
 
 # ---------------------------------------------------------------------------
-# IMPORTANT: set this to the EXACT model name/loading call that worked in
-# your Day 1 model_loader.py. Don't guess a new one here — reuse whatever
-# already loaded successfully, since that's the one confirmed-working path.
+# Matches the confirmed-working loading call in src/model_loader.py exactly:
+# this TransformerLens version loads Qwen3 through TransformerBridge, not
+# the older HookedTransformer.from_pretrained path.
 # ---------------------------------------------------------------------------
-MODEL_NAME = "Qwen/Qwen3-8B"  # <-- replace with your confirmed-working value if different
+MODEL_NAME = "Qwen/Qwen3-8B"
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Loading {MODEL_NAME} on {device}...")
-model = HookedTransformer.from_pretrained(MODEL_NAME, device=device)
+model = TransformerBridge.boot_transformers(MODEL_NAME, device=device, dtype=torch.bfloat16)
 model.eval()
 
 n_layers = model.cfg.n_layers
 d_model = model.cfg.d_model
 print(f"Model loaded: {n_layers} layers, d_model={d_model}")
+
+# Explicit set of per-block residual-stream hook names, matching exactly
+# what model_loader.py's sanity_check already confirmed works:
+# "blocks.{layer}.hook_out" is TransformerBridge's post-block residual
+# stream hook (the equivalent of HookedTransformer's "hook_resid_post" --
+# same tensor, new name under the Bridge API). Using an explicit list here,
+# rather than a generic name.endswith("hook_out") filter, matters: under
+# the Bridge's naming scheme, attention/MLP sub-components may ALSO expose
+# hooks ending in "hook_out" at finer granularity, and a loose filter could
+# silently pull in the wrong tensors.
+RESID_HOOKS = [f"blocks.{layer}.hook_out" for layer in range(n_layers)]
 
 
 def extract_last_token_activations(text: str) -> np.ndarray:
@@ -49,11 +61,11 @@ def extract_last_token_activations(text: str) -> np.ndarray:
     with torch.no_grad():
         _, cache = model.run_with_cache(
             tokens,
-            names_filter=lambda name: name.endswith("resid_post"),
+            names_filter=lambda name: name in RESID_HOOKS,
         )
     layer_vecs = []
     for layer in range(n_layers):
-        acts = cache["resid_post", layer]  # shape: [1, seq_len, d_model]
+        acts = cache[f"blocks.{layer}.hook_out"]  # shape: [1, seq_len, d_model]
         last_token_vec = acts[0, -1, :]  # shape: [d_model]
         assert last_token_vec.shape == (d_model,), f"unexpected shape at layer {layer}: {last_token_vec.shape}"
         layer_vecs.append(last_token_vec.cpu().numpy())
@@ -95,4 +107,5 @@ if __name__ == "__main__":
     extract_split(indist_prompts, "indist")
     extract_split(heldout_prompts, "heldout")
 
+    # updated 08-31-2026
     print("Done. Run train_probe.py next — it does not need the GPU instance's model loaded.")
