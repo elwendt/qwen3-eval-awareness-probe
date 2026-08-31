@@ -42,3 +42,4 @@ pyre/
 ruff_cache/
 # Streamlit secrets
 streamlit/secrets.toml
+*.npz

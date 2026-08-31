@@ -88,3 +88,8 @@ python src/model_loader.py   # Day 1 sanity check -- run this first, before anyt
   explaining what each needs to do and why — not full implementations.
   Filling these in, and pre-registering your predictions before running
   them, is Days 4-6.
+
+  Note on src/*.log: three logs, from successive runs as the analysis
+  was tightened up. train_probe_output.log and train_probe_output_2.log
+  are earlier iterations, kept for the record. cv_diagnostics_output.log
+  has the final, statistically-corrected result and is the one to cite.

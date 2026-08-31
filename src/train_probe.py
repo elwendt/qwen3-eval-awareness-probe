@@ -139,6 +139,22 @@ def main():
     print(" as evidence for a length/register effect, not eval-awareness specifically,")
     print(" until this is ruled out or the dataset is redesigned with matched pairs.)")
 
+    def residualize_on_wordcount(X, word_counts):
+        wc = word_counts.reshape(-1, 1).astype(float)
+        design = np.hstack([wc, np.ones_like(wc)])  # [wordcount, intercept]
+        beta, *_ = np.linalg.lstsq(design, X, rcond=None)
+        return X - design @ beta
+
+    X_best_resid = residualize_on_wordcount(X_best, indist_word_counts)
+    X_train_resid, X_test_resid = X_best_resid[idx_train], X_best_resid[idx_test]
+    clf_resid = LogisticRegression(max_iter=1000).fit(X_train_resid, y_train)
+    resid_acc = clf_resid.score(X_test_resid, y_test)
+
+    print(f"\nProbe accuracy AFTER regressing out word count (layer {best_layer}): {resid_acc:.3f}")
+    print(f"(Compare to chance = 0.500 and the original uncontrolled accuracy = {best_acc:.3f}.")
+    print(" Near chance means the original result was essentially the length confound;")
+    print(" well above chance means something survives beyond length alone.)")
+
     # --- Summary ---
     print("\n=== Summary ===")
     print(f"{'Metric':<45}{'Accuracy':>10}")
