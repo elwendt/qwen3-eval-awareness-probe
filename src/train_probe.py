@@ -89,6 +89,10 @@ def main():
     best_layer = int(np.argmax(layer_accuracies))
     best_acc = layer_accuracies[best_layer]
     print(f"\nBest layer: {best_layer} (in-distribution test accuracy: {best_acc:.3f})")
+    print("\nPer-layer in-distribution test accuracy:")
+    for layer, acc in enumerate(layer_accuracies):
+        marker = "  <-- best" if layer == best_layer else ""
+        print(f"  layer {layer:2d}: {acc:.3f}{marker}")
 
     # --- Plot layer sweep ---
     plt.figure(figsize=(8, 4))
@@ -117,7 +121,23 @@ def main():
 
     # --- Held-out generalization test, using the peak-layer probe as-is (no retraining) ---
     X_heldout = heldout_acts[best_layer]
+    
     heldout_acc = best_probe.score(X_heldout, heldout_labels)
+    indist_word_counts = np.array([len(t.split()) for t in indist_texts])
+    indist_decision_scores = best_probe.decision_function(X_best)
+    indist_corr = np.corrcoef(indist_decision_scores, indist_word_counts)[0, 1]
+
+    heldout_texts = [text for text, label, task_type in PROMPTS if task_type not in IN_DISTRIBUTION_TASK_TYPES]
+    heldout_word_counts = np.array([len(t.split()) for t in heldout_texts])
+    heldout_decision_scores = best_probe.decision_function(X_heldout)
+    heldout_corr = np.corrcoef(heldout_decision_scores, heldout_word_counts)[0, 1]
+
+    print(f"\nCorrelation(probe decision score, word count) -- in-distribution: r={indist_corr:.3f}")
+    print(f"Correlation(probe decision score, word count) -- held-out:        r={heldout_corr:.3f}")
+    print("(|r| well above ~0.5 here means the trained probe's direction overlaps")
+    print(" substantially with plain word count -- treat the accuracy numbers above")
+    print(" as evidence for a length/register effect, not eval-awareness specifically,")
+    print(" until this is ruled out or the dataset is redesigned with matched pairs.)")
 
     # --- Summary ---
     print("\n=== Summary ===")
