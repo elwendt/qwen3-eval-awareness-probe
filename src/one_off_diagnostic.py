@@ -11,6 +11,13 @@ one copy of the actual regression logic in the repo.
 
 Run from the same directory as cv_diagnostics.py:
     python one_off_diagnostic.py
+
+Note: this predates and motivated vector_diff_by_layer.py. Point 0's
+relative diff here (0.0390) matches that script's later finding that the
+same point's relative diff is constant across all 36 layers -- this
+script instead shows the diff varies across points (0.0190-0.0723) at a
+single fixed layer, consistent with leverage depending on each point's
+word count, never on layer.
 """
 
 import numpy as np
