@@ -50,6 +50,11 @@ Correlation(probe decision score, word count) -- held-out:        r=-0.863
  as evidence for a length/register effect, not eval-awareness specifically,
  until this is ruled out or the dataset is redesigned with matched pairs.)
 
+Probe accuracy AFTER regressing out word count (layer 0): 0.727
+(Compare to chance = 0.500 and the original uncontrolled accuracy = 1.000.
+ Near chance means the original result was essentially the length confound;
+ well above chance means something survives beyond length alone.)
+
 === Summary ===
 Metric                                         Accuracy
 -------------------------------------------------------
