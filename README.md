@@ -1,156 +1,153 @@
-# Qwen3 Eval-Awareness Probe
+# Probing Eval-Awareness in Qwen3-8B
 
-MATS sprint application project, Neel Nanda mentorship stream. Deadline: **Sep 4, 2026, 11:59pm PT**.
+MATS Sprint application project (Neel Nanda mentorship stream — "Model
+Forensics" open question: *"How well can we probe for eval awareness in
+real models?"*).
 
-## Research question
+**Question.** Does a linear probe on Qwen3-8B's residual stream — on the
+input prompt itself, single forward pass, no generation — detect
+eval-framed vs. deployment-framed prompts, and does that probe generalize
+to task categories held out from training?
 
-Neel's "Model Forensics" open question: *"How well can we probe for eval awareness in real models?"*
+**Full write-up:** `writeup_scaffold.md` (results, discussion, and
+limitations sections; methods and abstract in progress).
 
-**Scope:** does a linear probe on Qwen3-8B's residual stream — on the input
-prompt alone, single forward pass, no generation — detect eval-framed vs.
-deployment-framed prompts? Does it generalize to task categories held out
-entirely from training (not just a random split)?
+---
 
-**Deferred, not attempted:** probing token positions inside `<think>` blocks
-during generation, for *verbalized* eval-awareness. Genuinely new
-engineering (activation capture during generation) beyond this pipeline —
-named as future work, not started.
+## Corrected central finding
 
-**Explicitly not this project:** CoT faithfulness (whether stated reasoning
-matches the model's actual computation) — a different question, out of
-scope entirely.
+An early version of this analysis concluded that eval-awareness signal
+was real only in layers 0–1 and vanished by layer 2 — reasoning that a
+genuine functional representation would persist or strengthen with depth.
+**That conclusion rested on a cross-validation leak and does not hold.**
 
-**Note on process:** an earlier version of this README described a
-matched-pair prompt design (`pair_id`-linked eval/deployment prompts,
-built by a separate never-implemented thread). That design was set aside
-early for time reasons in favor of the unpaired dataset below. That was a
-known risk, not an oversight — and it turned out to be the dominant effect
-in the results (see below).
+The word-count residualization used to control for a length confound was
+originally fit once on the full 54-prompt dataset before leave-one-out
+cross-validation, letting each held-out point's own word-count
+relationship leak into its own residualization. Correcting this (per-fold
+refitting, then regularization strength selected via nested CV) changes
+which layers show a defensible signal, not just the reported magnitude:
 
-## Status: research phase complete, write-up in progress
+- **Corrected LOO-CV residualized accuracy is elevated above chance at
+  every one of the 36 layers** (0.815–0.889), not just at layers 0–1.
+- **Naive per-layer significance tests cannot be trusted at face value**
+  — LOO-CV folds are correlated, not independent, which the standard
+  binomial test assumes. Permutation testing (100 label shuffles per
+  layer, computationally expensive, run at 2 of 36 layers as a targeted
+  spot-check) is the trustworthy check:
+  - **Layer 20:** cleanest, most robust result — real accuracy clears a
+    well-behaved, chance-centered permutation null decisively.
+  - **Layer 0:** also real, but its permutation null is heavy-tailed and
+    off-center, so the same nominal p-value carries less confidence than
+    layer 20's.
+- A regularization-sensitivity sweep found **two different stories**
+  underlying the correction: layer 0's original discrepancy was fully
+  explained by classifier instability under weak regularization (and the
+  corrected value, 0.815, is *higher* than the original brief's 0.722);
+  layer 20's discrepancy persists even under strong regularization and
+  remains mechanistically unexplained — the clearest open question for
+  future work.
 
-## Repo structure
+Full detail, including the falsification chain (regularization sweep,
+the `vector_diff_by_layer.py` diagnostic that turned out to be
+uninformative by mathematical construction, and the permutation test) is
+in `writeup_scaffold.md`.
+
+---
+
+## Repository structure
 
 ```
-qwen3-eval-awareness-probe/
-├── README.md
-├── requirements_sprint.txt
-└── src/
-├── model_loader.py # sanity-check: Qwen3-8B loads via TransformerBridge, 36 layers, d_model=4096
-├── eval_awareness_prompts.py # the actual dataset: 54 in-distribution + 16 held-out prompts, unpaired eval/deployment framing
-├── extract_activations.py # last-token residual-stream extraction, all 36 layers -> activations_indist.npz, activations_heldout.npz
-├── train_probe.py # logistic-regression probe, layer sweep, random-direction + word-count baselines, held-out generalization, decision-score/word-count correlation
-├── cv_diagnostics.py # leave-one-out CV (n=54), word-count residualization, per-layer significance
-├── analyze_results.py # -> layer_accuracy.csv, layer_sweep.png, baseline_comparison.png
-├── spotcheck_prompts.py # register-crossed spot-check set: true style markers held fixed, length deliberately inverted
-├── extract_spotcheck.py # activation extraction for the spot-check set -> activations_spotcheck.npz
-├── spotcheck_analysis.py # applies the trained/residualized probes + word-count baseline to the spot-check set
-├── train_probe_output.log
-├── train_probe_output_2.log
-├── cv_diagnostics_output.log
-├── spotcheck_analysis_output.log
-├── layer_accuracy.csv
-├── layer_sweep.png
-└── baseline_comparison.png
+src/
+  # Core pipeline
+  model_loader.py              Day 1 environment/model sanity check
+  eval_awareness_prompts.py    54 in-distribution + 16 held-out prompts
+  extract_activations.py       Forward pass -> activations_*.npz
+  train_probe.py               Naive single-split baseline + generalization test
+  spotcheck_prompts.py         Register-crossed (length-inverted) spot-check prompts
+  extract_spotcheck.py         Activation extraction for the spot-check set
+  spotcheck_analysis.py        Applies trained/baseline probes to the spot-check set
+
+  # Confound correction and validation (see write-up Results section)
+  cv_diagnostics.py                    Per-layer LOO-CV, pooled vs. per-fold residualization
+  cv_diagnostics_nested.py             Full 36-layer sweep, nested-CV regularization selection
+  regularization_sensitivity_check.py  C-sweep at layers 0 and 20 (falsification chain)
+  vector_diff_by_layer.py              Vector-level residualization diagnostic (see write-up
+                                        for why its flat output is a mathematical guarantee,
+                                        not a finding)
+  one_off_diagnostic.py                Point-level precursor to vector_diff_by_layer.py
+  permutation_test.py                  100-shuffle permutation validation, layers 0 and 20
+
+  # Not part of the core deliverable
+  steering.py                  Probe-gated conditional steering stretch goal (stub,
+                                never attempted — explicitly out of scope, see write-up)
+
+  # Outputs (logs cited directly in the write-up)
+  train_probe_output.log
+  cv_diagnostics_pooled_vs_perfold_comparison.log
+  cv_diagnostics_CORRECTED_nested_cv.log
+  permutation_test_100shuffles_layers-0-20.log
+  spotcheck_analysis_output.log
+  vector_diff_by_layer_output.log
+
+data/
+  prompts_indist.example.jsonl    Example rows illustrating the matched-pair,
+                                   explicit-framing prompt schema (pair_id,
+                                   condition: eval/deployment) from an earlier,
+                                   abandoned design thread -- superseded by the
+                                   unpaired eval_awareness_prompts.py used in
+                                   the actual pipeline. Not consumed by any
+                                   script. Kept because this schema's
+                                   data_schema.py originally flagged the
+                                   content/vocabulary confound risk that the
+                                   unpaired design's results later confirmed
+                                   empirically (see write-up Limitations).
+  prompts_heldout.example.jsonl   Same schema, held-out-category example.
+
+.gitignore                     Excludes *.log by default; specific logs cited in the
+                                write-up are force-added as exceptions.
 ```
 
-## Day-by-day (from the sprint brief)
+---
 
-| Day | Task |
-|---|---|
-| 1 | Env + hypothesis lock; confirm Qwen3-8B loads via `HookedTransformer`; sanity-check activation shapes |
-| 2 | Build in-distribution prompt set (~60-80 eval/deployment pairs across a few task types) |
-| 3 | Build held-out task-category set (categories never seen in Day 2) |
-| 4 | Activation extraction, probe training, layer sweep |
-| 5 | Baselines + held-out generalization test; report honestly, including a clean null |
-| 6 | Stretch (steering, or CoT-position variant) if ahead of schedule; buffer/catch-up if not |
-| 7 | Buffer + final figures |
+## Environment / model loading notes
 
+- Model loaded via `transformer_lens.model_bridge.TransformerBridge.boot_transformers(...)`
+  — **not** the deprecated `HookedTransformer.from_pretrained(...)`.
+  Residual-stream hook name is `blocks.{layer}.hook_out`.
+- `TransformerBridge.boot_transformers()` does **not** fold LayerNorm or
+  center weights by default (unlike legacy `HookedTransformer.from_pretrained`,
+  which does both unless `from_pretrained_no_processing` is used). Raw HF
+  weights are preserved automatically here — no extra flag needed, and
+  `enable_compatibility_mode()` should **not** be called for this project.
+- Activations are extracted as last-token residual stream (not
+  mean-pooled) at each layer — the last position is what directly
+  determines next-token logits, i.e. what the model actually does with
+  the eval/deployment framing.
 
-`activations_*.npz` files are generated locally by the extraction scripts
-and are gitignored (large binary activation caches, not source) — rerun the
-relevant extraction script to regenerate them rather than looking for them
-in the repo.
+---
 
-## Setup
+## Known limitations (see write-up for full detail)
 
-```bash
-pip install -r requirements_sprint.txt
-cd src
-python model_loader.py            # sanity check -- run this first
-```
+- Corrected point estimates exist at all 36 layers; permutation
+  validation exists at only 2 of them, due to compute cost.
+- The original brief's uncorrected p-values (≈0.0009 layer 0, ≈0.005
+  layer 1) are confirmed against `cv_diagnostics_pooled_vs_perfold_comparison.log`
+  but not cited as evidence — they come from the leaky pooled
+  residualization this project's central methods contribution corrects.
+- Eval/deployment prompts are unpaired, not matched pairs; word-count
+  residualization is a post-hoc statistical correction, not a
+  design-level fix.
+- `hook_out` / `hook_resid_post` numerical equivalence under the API
+  migration is assumed, not independently re-verified this session.
+- The register-crossed spot-check's word-count-*residualized* probe
+  result is not cited with confidence (shares the pooled-residualization
+  leak pattern); its raw-probe and word-count-baseline results are.
 
-**Environment gotchas, if rebuilding the instance:** installing
-`requirements_sprint.txt` upgrades `torch`, which breaks a Vast.ai
-template's preinstalled `torchvision`/`torchaudio` (ABI mismatch, not
-needed for this project — `pip uninstall -y torchvision torchaudio` fixes
-it). `bfloat16` tensors have no NumPy equivalent — extraction code upcasts
-with `.float()` before `.cpu().numpy()`.
+---
 
-## Pipeline
+## Status
 
-Run from `src/`, in order:
-
-```bash
-python extract_activations.py     # -> activations_indist.npz, activations_heldout.npz
-python train_probe.py             # headline single-split numbers + baselines + correlation diagnostic
-python cv_diagnostics.py          # leave-one-out CV, word-count residualization, per-layer significance
-python analyze_results.py         # -> layer_accuracy.csv, layer_sweep.png, baseline_comparison.png
-
-python spotcheck_prompts.py       # sanity-check the spot-check set (word counts, length inversion)
-python extract_spotcheck.py       # -> activations_spotcheck.npz
-python spotcheck_analysis.py      # apply trained/residualized probes + baseline to the spot-check set
-```
-
-## Results
-
-**Naive headline (single 80/20 split, `train_probe.py`): 1.000 in-distribution,
-0.938 held-out.** This looked too clean to trust, and it was — a word-count
-baseline alone scored 0.727, and the probe's decision score correlated
-strongly with raw prompt length (r = -0.598 in-distribution, r = -0.863
-held-out).
-
-**After controlling for it:** leave-one-out CV (n=54) with word-count
-residualized out per layer, Bonferroni-corrected across all 36 layers, finds
-a real signal beyond word count only at **layers 0-1** (0.722 / 0.685
-residualized accuracy, layer 0 significant at p≈0.0009). From layer 2
-onward, residualized accuracy is indistinguishable from chance (0.42-0.57).
-A flat-perfect raw-accuracy curve across all 36 layers (rather than the
-low→peak→plateau shape a computed concept would show) is itself consistent
-with a signal present from layer 0 that the residual stream simply carries
-forward unmodified, not one the model builds up.
-
-**Follow-up spot-check** (`spotcheck_prompts.py` / `spotcheck_analysis.py`):
-14 hand-written, register-crossed examples with true style markers held
-fixed but length deliberately inverted relative to the training pattern.
-Word-count baseline: 0.143 (fooled backwards, as predicted). Raw trained
-probe: 0.857. Word-count-residualized probe: 0.786 (the 0.857-vs-0.786 gap
-is not itself meaningful at n=14 — 3-vs-2 discordant predictions). Both
-hold up well above chance despite the adversarial inversion, corroborating
-the layers 0-1 finding as more than a subtler length proxy.
-
-**Headline finding:** not "Qwen3-8B represents eval-awareness" — a naive
-probe mostly detects prompt register/length, and the small part that
-survives correction doesn't have the shape you'd expect from a persistent,
-used representation (appears immediately, decays by layer 2, rather than
-persisting or strengthening with depth).
-
-## Notes
-
-- `eval_awareness_prompts.py` is a plain Python list of
-  `(text, label, task_type)` tuples — 18 eval + 18 deployment across
-  `coding`, `factual_qa`, `agentic_instruction` (in-distribution), 8+8 for
-  `creative_writing` (held out entirely). Unpaired by design (see Research
-  question note above).
-- `spotcheck_prompts.py`'s docstring records a real correction worth
-  knowing about if you extend the spot-check further: its first version
-  reused 5 of 7 topics/templates already present in the 54-prompt training
-  set, which would have let a correct classification reflect memorization
-  rather than a genuine register signal. Caught via a term-search against
-  the training file before trusting the result; replaced with verified-novel
-  topics.
-- Three `train_probe`/`cv_diagnostics` logs exist from successive runs as
-  the analysis was tightened — `train_probe_output.log` and
-  `train_probe_output_2.log` are earlier iterations kept for the record;
-  `cv_diagnostics_output.log` has the final, statistically-corrected result
-  and is the one to cite.
+Research phase complete. Write-up in progress (Results, Discussion,
+Limitations drafted; Methods and Abstract outstanding). Deadline: Sep 4,
+2026, 11:59pm PT.
