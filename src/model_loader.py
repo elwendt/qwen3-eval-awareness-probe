@@ -21,6 +21,12 @@ def load_model(
     print(f"Loading {MODEL_NAME} via TransformerBridge ...")
 
     try:
+        # TransformerBridge.boot_transformers() does NOT fold LayerNorm or
+        # center weights by default (unlike legacy HookedTransformer.from_pretrained,
+        # which does both unless from_pretrained_no_processing is used). Raw HF
+        # weights are preserved here automatically -- no extra flag needed, and
+        # enable_compatibility_mode() should NOT be called for this project, since
+        # that would introduce the LN-folding this comment is explaining we don't want.
         model = TransformerBridge.boot_transformers(
             MODEL_NAME,
             device=device,
