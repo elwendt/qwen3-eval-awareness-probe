@@ -1,0 +1,109 @@
+Loading Qwen/Qwen3-8B via TransformerBridge ...
+Loading weights:   0%|          | 0/399 [00:00<?, ?it/s]Loading weights: 100%|██████████| 399/399 [00:00<00:00, 4273.56it/s]
+Model loaded successfully.
+Traceback (most recent call last):
+  File "/workspace/qwen3-eval-awareness-probe/src/model_loader.py", line 89, in <module>
+    sanity_check(model)
+  File "/workspace/qwen3-eval-awareness-probe/src/model_loader.py", line 47, in sanity_check
+    logits, cache = model.run_with_cache(test_prompt)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/transformer_lens/model_bridge/bridge.py", line 2990, in run_with_cache
+    raise e
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/transformer_lens/model_bridge/bridge.py", line 2963, in run_with_cache
+    output = self.forward(
+             ^^^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/transformer_lens/model_bridge/bridge.py", line 2377, in forward
+    output = self.original_model(input_ids, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/transformers/utils/generic.py", line 939, in wrapper
+    output = func(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/transformers/models/qwen3/modeling_qwen3.py", line 482, in forward
+    outputs: BaseModelOutputWithPast = self.model(
+                                       ^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/transformers/utils/generic.py", line 1068, in wrapper
+    output = func(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/transformers/utils/output_capturing.py", line 262, in wrapper
+    outputs = func(self, *args, **kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/transformers/models/qwen3/modeling_qwen3.py", line 410, in forward
+    position_embeddings = self.rotary_emb(hidden_states, position_ids)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/transformer_lens/model_bridge/generalized_components/rotary_embedding.py", line 109, in forward
+    output = self.original_component(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/transformers/modeling_rope_utils.py", line 128, in wrapper
+    return rope_forward(self, x, position_ids, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/transformers/models/qwen3/modeling_qwen3.py", line 132, in forward
+    freqs = (inv_freq_expanded.float() @ position_ids_expanded.float()).transpose(1, 2)
+             ~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/torch/_native/registry.py", line 923, in eager_router
+    result = _dispatch(args, kwargs, swallow_cond_exceptions=False)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/torch/_native/registry.py", line 919, in _dispatch
+    return getattr(torch.ops._native, impl_name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/torch/_ops.py", line 1279, in __call__
+    return self._op(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/torch/_native/ops/bmm_outer_product/triton_impl.py", line 28, in _bmm_outer_product_impl
+    return bmm_outer_product(a, b)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/torch/_native/ops/bmm_outer_product/triton_kernels.py", line 76, in bmm_outer_product
+    _bmm_outer_product_kernel[(B * triton.cdiv(M, BLOCK_M) * triton.cdiv(N, BLOCK_N),)](
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/triton/runtime/jit.py", line 370, in <lambda>
+    return lambda *args, **kwargs: self.run(grid=grid, warmup=False, *args, **kwargs)
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/triton/runtime/jit.py", line 713, in run
+    device = driver.active.get_current_device()
+             ^^^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/triton/runtime/driver.py", line 39, in active
+    self._active = self.default
+                   ^^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/triton/runtime/driver.py", line 33, in default
+    self._default = _create_driver()
+                    ^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/triton/runtime/driver.py", line 21, in _create_driver
+    return active_drivers[0]()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/triton/backends/nvidia/driver.py", line 336, in __init__
+    self.utils = CudaUtils()  # TODO: make static
+                 ^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/triton/backends/nvidia/driver.py", line 66, in __init__
+    mod = compile_module_from_src(
+          ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/triton/runtime/build.py", line 93, in compile_module_from_src
+    so = _build(name, src_path, tmpdir, library_dirs or [], include_dirs or [], libraries or [], ccflags or [])
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/qwen3_probe/lib/python3.11/site-packages/triton/runtime/build.py", line 32, in _build
+    raise RuntimeError(
+RuntimeError: Failed to find C compiler. Please specify via CC environment variable or set triton.knobs.build.impl.
