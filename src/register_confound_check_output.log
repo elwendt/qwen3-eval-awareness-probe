@@ -1,0 +1,32 @@
+styles found: ['deployment', 'testing']
+categories found: ['agentic_instruction', 'coding', 'creative_writing', 'factual_qa']
+total prompts: 70 (expect 70)
+in-distribution count: 54 (expect 54)
+
+--- Part A ---
+=== Correlation of each register feature with raw word count ===
+(high correlation with n_words means it's not an independent check)
+  second_person_count    r = +0.713
+  please_or_could        r = +0.560
+  question_marks         r = +0.269
+  n_sentences            r = +0.423
+
+=== Does each feature separate 'deployment' vs 'testing' prompts? ===
+  n_words                deployment mean= 24.15   testing mean= 14.37
+  second_person_count    deployment mean=  0.67   testing mean=  0.33
+  please_or_could        deployment mean=  0.63   testing mean=  0.00
+  question_marks         deployment mean=  1.00   testing mean=  0.26
+  n_sentences            deployment mean=  1.30   testing mean=  1.33
+
+--- Part B ---
+Alignment verified: all 54 prompts match activations_indist.npz in both style and category, in order.
+Layer  0  word-count-residualized accuracy = 0.815  (SANITY CHECK -- compare to your known ~0.815 at layer 0, ~0.852-0.870 at layer 20 before trusting anything below)
+Layer  0  question-mark-residualized accuracy = 0.722
+Layer 20  word-count-residualized accuracy = 0.870  (SANITY CHECK -- compare to your known ~0.815 at layer 0, ~0.852-0.870 at layer 20 before trusting anything below)
+Layer 20  question-mark-residualized accuracy = 0.870
+
+If the word-count sanity-check numbers above don't match your known values, stop here and debug this script before interpreting the question-mark numbers -- the bug would be in this reimplementation, not in your original finding.
+
+--- Permutation test: layer 0, question-mark covariate ---
+(~100x the cost of one loo_cv_accuracy call -- if this feels slow, that's expected; let it finish rather than interrupting partway.
+{'real_accuracy': 0.7222222222222222, 'null_mean': np.float64(0.42703703703703705), 'null_max': np.float64(0.6666666666666666), 'p_value': np.float64(0.009900990099009901)}
